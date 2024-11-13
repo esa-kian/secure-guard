@@ -5,7 +5,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/esa-kian/secureguard/internal/firewall"
+	"github.com/esa-kian/secure-guard/internal/firewall"
 )
 
 // Basic request handler function

@@ -3,11 +3,62 @@ package firewall
 import (
 	"net/http"
 	"strings"
+	"sync"
+	"time"
 )
 
-// CheckRequest applies basic firewall rules to incoming requests.
+// RateLimiter struct limits the number of requests per second
+type RateLimiter struct {
+	tokens     int
+	maxTokens  int
+	refillRate time.Duration
+	mu         sync.Mutex
+	lastRefill time.Time
+}
+
+// NewRateLimiter creates a new RateLimiter
+func NewRateLimiter(maxTokens int, refillRate time.Duration) *RateLimiter {
+	return &RateLimiter{
+		tokens:     maxTokens,
+		maxTokens:  maxTokens,
+		refillRate: refillRate,
+		lastRefill: time.Now(),
+	}
+}
+
+// Allow checks if a request can pass through based on rate limit
+func (rl *RateLimiter) Allow() bool {
+	rl.mu.Lock()
+	defer rl.mu.Unlock()
+
+	// Refill tokens based on time elapsed since the last refill
+	now := time.Now()
+	elapsed := now.Sub(rl.lastRefill)
+	refillTokens := int(elapsed / rl.refillRate)
+	if refillTokens > 0 {
+		rl.tokens += refillTokens
+		if rl.tokens > rl.maxTokens {
+			rl.tokens = rl.maxTokens
+		}
+		rl.lastRefill = now
+	}
+
+	// Check if there are tokens available
+	if rl.tokens > 0 {
+		rl.tokens--
+		return true
+	}
+	return false
+}
+
+var rateLimiter = NewRateLimiter(5, time.Second) // 5 requests per second
+
 func CheckRequest(r *http.Request) bool {
-	// Example rule: Block requests from a specific user agent
+	if !rateLimiter.Allow() {
+		return true // Block request due to rate limit
+	}
+
+	// Existing firewall rules
 	blockedUserAgents := []string{"BadBot", "Scanner"}
 	for _, agent := range blockedUserAgents {
 		if strings.Contains(r.UserAgent(), agent) {
@@ -15,7 +66,6 @@ func CheckRequest(r *http.Request) bool {
 		}
 	}
 
-	// Example rule: Block requests to a specific path
 	blockedPaths := []string{"/admin", "/config"}
 	for _, path := range blockedPaths {
 		if strings.HasPrefix(r.URL.Path, path) {
