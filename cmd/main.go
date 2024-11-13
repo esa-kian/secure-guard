@@ -12,6 +12,8 @@ import (
 
 // Basic request handler function
 func requestHandler(w http.ResponseWriter, r *http.Request) {
+	startTime := time.Now()
+
 	log.Printf("Received request: %s %s from %s", r.Method, r.URL.Path, r.RemoteAddr)
 
 	if firewall.CheckRequest(r) {
@@ -21,8 +23,12 @@ func requestHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Allow the request and measure the time taken to process
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("Welcome to SecureGuard!"))
+
+	duration := time.Since(startTime)
+	log.Printf("Processed request in %s", duration)
 }
 
 func main() {
