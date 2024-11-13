@@ -12,14 +12,15 @@ import (
 
 // Basic request handler function
 func requestHandler(w http.ResponseWriter, r *http.Request) {
-	// Process incoming request with firewall rules
+	log.Printf("Received request: %s %s from %s", r.Method, r.URL.Path, r.RemoteAddr)
+
 	if firewall.CheckRequest(r) {
+		log.Printf("Blocked request: %s %s from %s", r.Method, r.URL.Path, r.RemoteAddr)
 		w.WriteHeader(http.StatusForbidden)
 		w.Write([]byte("403 - Forbidden"))
 		return
 	}
 
-	// Allow request if it passes firewall rules
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("Welcome to SecureGuard!"))
 }
