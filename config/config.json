@@ -1,0 +1,9 @@
+{
+    "rateLimit": {
+        "maxTokens": 5,
+        "refillRate": "1s"
+    },
+    "logging": {
+        "frequency": "10s"
+    }
+}
