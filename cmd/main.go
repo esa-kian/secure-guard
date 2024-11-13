@@ -4,8 +4,10 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/esa-kian/secure-guard/internal/firewall"
+	"github.com/esa-kian/secure-guard/internal/monitoring"
 )
 
 // Basic request handler function
@@ -23,9 +25,14 @@ func requestHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	// Set up the HTTP server and route
-	http.HandleFunc("/", requestHandler)
+	go func() {
+		for {
+			monitoring.PrintStats()
+			time.Sleep(10 * time.Second)
+		}
+	}()
 
+	http.HandleFunc("/", requestHandler)
 	fmt.Println("Starting SecureGuard server on port 8080...")
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }

@@ -5,6 +5,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/esa-kian/secure-guard/internal/monitoring"
 )
 
 // RateLimiter struct limits the number of requests per second
@@ -54,14 +56,17 @@ func (rl *RateLimiter) Allow() bool {
 var rateLimiter = NewRateLimiter(5, time.Second) // 5 requests per second
 
 func CheckRequest(r *http.Request) bool {
+	monitoring.RecordRequest()
+
 	if !rateLimiter.Allow() {
+		monitoring.RecordRateLimited()
 		return true // Block request due to rate limit
 	}
 
-	// Existing firewall rules
 	blockedUserAgents := []string{"BadBot", "Scanner"}
 	for _, agent := range blockedUserAgents {
 		if strings.Contains(r.UserAgent(), agent) {
+			monitoring.RecordBlockedRequest()
 			return true // Block this request
 		}
 	}
@@ -69,6 +74,7 @@ func CheckRequest(r *http.Request) bool {
 	blockedPaths := []string{"/admin", "/config"}
 	for _, path := range blockedPaths {
 		if strings.HasPrefix(r.URL.Path, path) {
+			monitoring.RecordBlockedRequest()
 			return true // Block this request
 		}
 	}
